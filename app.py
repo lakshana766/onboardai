@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests
 import os
@@ -24,7 +24,6 @@ def chat():
     system_prompt = data.get('systemPrompt', '')
     chat_history  = data.get('chatHistory', [])
 
-    # Build Gemini contents
     contents = [
         {'role': 'user',  'parts': [{'text': system_prompt + '\n\nAcknowledge briefly.'}]},
         {'role': 'model', 'parts': [{'text': 'Understood! Ready to help.'}]},
@@ -46,4 +45,5 @@ def chat():
     return jsonify({'reply': reply})
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
