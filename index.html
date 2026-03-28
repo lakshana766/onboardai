@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OnboardAI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f1117; --surface: #161b27; --card: #1c2333; --card2: #212840;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+    --text: #e8eaf0; --muted: #7c8499; --accent: #4f8ef7;
+    --green: #34d399; --amber: #fbbf24; --red: #f87171; --purple: #a78bfa; --cyan: #22d3ee;
+  }
+  body { background: var(--bg); color: var(--text); font-size: 14px; font-family: system-ui, sans-serif; }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 16px; height: 52px; }
+  .logo { font-size: 15px; font-weight: 500; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .badge { background: rgba(52,211,153,0.15); color: var(--green); font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(52,211,153,0.3); }
+  .pulse { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 5px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .main { display: grid; grid-template-columns: 1fr 280px 360px; height: calc(100vh - 52px); overflow: hidden; }
+  .col-left  { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .col-mid   { border-left: 1px solid var(--border); overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: var(--surface); }
+  .col-right { border-left: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .card-title { font-size: 13px; font-weight: 500; margin-bottom: 14px; }
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .stat-val { font-size: 24px; font-weight: 500; }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .s-blue .stat-val{color:var(--accent)} .s-amber .stat-val{color:var(--amber)} .s-green .stat-val{color:var(--green)}
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .fg { flex: 1; min-width: 100px; }
+  .fg label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+  .fg input, .fg select { width: 100%; background: var(--card2); border: 1px solid var(--border2); border-radius: 7px; color: var(--text); font-size: 13px; padding: 8px 10px; font-family: inherit; outline: none; }
+  .fg input:focus, .fg select:focus { border-color: var(--accent); }
+  .fg select option { background: #1c2333; }
+  .submit-btn { margin-top: 10px; background: var(--accent); color: #fff; border: none; border-radius: 7px; padding: 8px 20px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .submit-btn:hover { opacity: 0.85; }
+  .emp-list { display: flex; flex-direction: column; gap: 10px; }
+  .emp-card { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .emp-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+  .emp-name { font-size: 14px; font-weight: 500; }
+  .emp-meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .emp-right { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+  .spill { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  .sp-pend { background: rgba(251,191,36,0.15); color: var(--amber); border: 1px solid rgba(251,191,36,0.3); }
+  .sp-prog { background: rgba(79,142,247,0.15); color: var(--accent); border: 1px solid rgba(79,142,247,0.3); }
+  .sp-done { background: rgba(52,211,153,0.15); color: var(--green); border: 1px solid rgba(52,211,153,0.3); }
+  .prog-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin: 8px 0 4px; }
+  .prog-bar { height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+  .task-row { display: flex; align-items: center; gap: 9px; padding: 6px 8px; border-radius: 7px; margin-top: 4px; background: rgba(255,255,255,0.02); border: 1px solid transparent; }
+  .task-row:hover { border-color: var(--border2); }
+  .tdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .tname { font-size: 12px; flex: 1; }
+  .tagent { font-size: 10px; }
+  .help-btn { font-size: 10px; padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(79,142,247,0.4); color: var(--accent); background: rgba(79,142,247,0.1); cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .help-btn:hover { background: rgba(79,142,247,0.25); }
+  .agents-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .agent-card { background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .agent-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .agent-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .agent-name { font-size: 12px; font-weight: 500; }
+  .agent-sub { font-size: 11px; color: var(--muted); }
+  .agent-activity { font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; min-height: 28px; }
+  .panel-label { font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .alert-count { background: var(--red); color: #fff; font-size: 10px; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+  .alert-item { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .alert-item.warn { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.2); }
+  .alert-top { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--red); }
+  .alert-item.warn .alert-top { color: var(--amber); }
+  .alert-body { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .empty-state { color: var(--muted); font-size: 12px; text-align: center; padding: 12px 0; }
+  .section-divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .log-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .log-time { color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .log-msg { color: var(--text); flex: 1; }
+  .log-type { font-size: 10px; padding: 2px 7px; border-radius: 20px; margin-left: auto; flex-shrink: 0; }
+  .log-type.info { background: rgba(79,142,247,0.15); color: var(--accent); }
+  .log-type.warn { background: rgba(251,191,36,0.15); color: var(--amber); }
+  .log-type.alert { background: rgba(248,113,113,0.15); color: var(--red); }
+  .right-header { padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .right-title { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .ai-badge { background: rgba(167,139,250,0.15); color: var(--purple); font-size: 10px; padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(167,139,250,0.3); }
+  .right-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .chat-msgs { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 10px; text-align: center; color: var(--muted); }
+  .ph-icon { font-size: 34px; }
+  .ph-text { font-size: 13px; line-height: 1.7; max-width: 230px; }
+  .ph-sub { font-size: 11px; opacity: 0.5; }
+  .msg { display: flex; flex-direction: column; gap: 3px; }
+  .msg.user { align-items: flex-end; } .msg.ai { align-items: flex-start; }
+  .msg-who { font-size: 10px; color: var(--muted); }
+  .msg.ai .msg-who { color: var(--purple); }
+  .bubble { padding: 10px 13px; border-radius: 10px; font-size: 13px; line-height: 1.65; max-width: 94%; }
+  .msg.user .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 3px; }
+  .msg.ai .bubble { background: var(--card2); border: 1px solid var(--border2); border-bottom-left-radius: 3px; }
+  .typing-dots { display: flex; gap: 4px; padding: 12px 14px; background: var(--card2); border: 1px solid var(--border2); border-radius: 10px; border-bottom-left-radius: 3px; width: fit-content; }
+  .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
+  .typing-dots span:nth-child(2){animation-delay:.2s} .typing-dots span:nth-child(3){animation-delay:.4s}
+  @keyframes blink { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+  .quick-chips { padding: 0 20px 10px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+  .qchip { text-align: left; background: var(--card2); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 12px; font-size: 12px; color: var(--text); cursor: pointer; font-family: inherit; }
+  .qchip:hover { border-color: var(--accent); color: var(--accent); }
+  .chat-input { padding: 12px 20px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
+  .chat-inp { flex: 1; background: var(--card2); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); font-size: 13px; padding: 9px 12px; font-family: inherit; outline: none; }
+  .chat-inp:focus { border-color: var(--accent); }
+  .chat-inp:disabled { opacity: 0.4; }
+  .send-btn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 0 15px; font-size: 16px; cursor: pointer; }
+  .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo"><span class="logo-dot"></span>OnboardAI</div>
+  <div style="font-size:12px;color:var(--muted);">Employee Onboarding Platform</div>
+  <div class="topbar-right">
+    <span style="font-size:12px;color:var(--muted);">4 Agents Active</span>
+    <span class="badge"><span class="pulse"></span>AI Assistant Live</span>
+  </div>
+</div>
+
+<div class="main">
+  <!-- LEFT: Stats + Form + Employees + Agents -->
+  <div class="col-left">
+    <div class="stats-row">
+      <div class="stat-card s-blue"><div class="stat-val" id="st-total">0</div><div class="stat-label">Total</div></div>
+      <div class="stat-card s-amber"><div class="stat-val" id="st-pend">0</div><div class="stat-label">Pending</div></div>
+      <div class="stat-card s-blue"><div class="stat-val" id="st-prog">0</div><div class="stat-label">In Progress</div></div>
+      <div class="stat-card s-green"><div class="stat-val" id="st-done">0</div><div class="stat-label">Completed</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Add New Employee</div>
+      <div class="form-row">
+        <div class="fg"><label>Full Name</label><input type="text" id="inp-name" placeholder="e.g. Alex Kim"/></div>
+        <div class="fg"><label>Role</label><select id="inp-role"><option>Developer</option><option>Designer</option><option>HR</option></select></div>
+        <div class="fg"><label>Department</label><input type="text" id="inp-dept" placeholder="e.g. Engineering"/></div>
+      </div>
+      <button class="submit-btn" onclick="addEmp()">Generate Onboarding Tasks</button>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div class="card-title" style="margin-bottom:0;">Employee Dashboard</div>
+        <span style="font-size:11px;color:var(--muted);" id="emp-count">0 employees</span>
+      </div>
+      <div class="emp-list" id="emp-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Agent Modules</div>
+      <div class="agents-grid">
+        <div class="agent-card">
+          <div class="agent-top">
+            <div class="agent-icon" style="background:rgba(167,139,250,0.15);">📋</div>
+            <div><div class="agent-name" style="color:var(--purple);">HR Agent</div><div class="agent-sub">Documents & Compliance</div></div>
+          </div>
+          <div class="agent-activity" id="hr-activity">Monitoring document submissions...</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-top">
+            <div class="agent-icon" style="background:rgba(34,211,238,0.15);">💻</div>
+            <div><div class="agent-name" style="color:var(--cyan);">IT Agent</div><div class="agent-sub">System Access & Setup</div></div>
+          </div>
+          <div class="agent-activity" id="it-activity">Provisioning accounts...</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-top">
+            <div class="agent-icon" style="background:rgba(79,142,247,0.15);">👤</div>
+            <div><div class="agent-name" style="color:var(--accent);">Manager Agent</div><div class="agent-sub">Role Tasks & Meetings</div></div>
+          </div>
+          <div class="agent-activity" id="mgr-activity">Scheduling onboarding sessions...</div>
+        </div>
+        <div class="agent-card">
+          <div class="agent-top">
+            <div class="agent-icon" style="background:rgba(248,113,113,0.15);">🔍</div>
+            <div><div class="agent-name" style="color:var(--red);">Monitor Agent</div><div class="agent-sub">Delay Detection & Alerts</div></div>
+          </div>
+          <div class="agent-activity" id="mon-activity">Scanning for delays...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MIDDLE: Alerts + Activity Log -->
+  <div class="col-mid">
+    <div>
+      <div class="panel-label">Alerts <span class="alert-count" id="alert-count">0</span></div>
+      <div style="margin-top:10px;" id="alerts-panel">
+        <div class="empty-state">No alerts yet. Alerts trigger after 2 min.</div>
+      </div>
+    </div>
+    <div class="section-divider"></div>
+    <div>
+      <div class="panel-label" style="margin-bottom:10px;">Activity Log</div>
+      <div id="activity-log"><div class="empty-state">No activity yet.</div></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: AI Chat -->
+  <div class="col-right">
+    <div class="right-header">
+      <div class="right-title">AI Task Assistant <span class="ai-badge">Gemini</span></div>
+      <div class="right-sub" id="right-sub">Click "AI Help" on any task to start chatting</div>
+    </div>
+    <div class="chat-msgs" id="chat-msgs">
+      <div class="placeholder">
+        <div class="ph-icon">🤖</div>
+        <div class="ph-text">Click <strong style="color:var(--accent);">AI Help</strong> on any task to get instant AI guidance.</div>
+        <div class="ph-sub">Powered by Gemini · Responds instantly</div>
+      </div>
+    </div>
+    <div class="quick-chips" id="quick-chips" style="display:none;"></div>
+    <div class="chat-input">
+      <input class="chat-inp" id="chat-inp" placeholder="Click AI Help on a task first..." disabled onkeydown="if(event.key==='Enter')sendMsg()"/>
+      <button class="send-btn" id="send-btn" onclick="sendMsg()" disabled>↑</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TASKS={Developer:[{agent:'HR',name:'Sign NDA & Offer Letter'},{agent:'IT',name:'GitHub & JIRA Access'},{agent:'IT',name:'Dev Environment Setup'},{agent:'Manager',name:'Sprint Intro & Team Meet'},{agent:'Manager',name:'Codebase Walkthrough'},{agent:'HR',name:'Benefits Enrollment Form'}],Designer:[{agent:'HR',name:'Sign NDA & Offer Letter'},{agent:'IT',name:'Figma & Slack Access'},{agent:'IT',name:'Design Tool Licenses'},{agent:'Manager',name:'Brand Guidelines Review'},{agent:'Manager',name:'Meet Design Team'},{agent:'HR',name:'Benefits Enrollment Form'}],HR:[{agent:'HR',name:'Sign NDA & Offer Letter'},{agent:'IT',name:'HRIS System Access'},{agent:'IT',name:'Email & Calendar Setup'},{agent:'Manager',name:'Policy & Handbook Review'},{agent:'Manager',name:'Meet HR Leadership'},{agent:'HR',name:'Benefits Enrollment Form'}]};
+const AGCOL={HR:'#a78bfa',IT:'#22d3ee',Manager:'#4f8ef7'};
+const AVBG=['rgba(79,142,247,0.2)','rgba(167,139,250,0.2)','rgba(34,211,238,0.2)','rgba(52,211,153,0.2)','rgba(251,191,36,0.2)'];
+const AVCOL=['#4f8ef7','#a78bfa','#22d3ee','#34d399','#fbbf24'];
+const QUICK_Q={HR:['What documents do I need to submit?','What file format should I use?','What if I am missing a document?','Who do I contact if I am stuck?'],IT:['How long does this setup take?','Do I need admin rights on my laptop?','What if I face a technical issue?','Who do I contact for IT support?'],Manager:['How long is this session?','Do I need to prepare anything?','What if I need to reschedule?','Who is my main point of contact?']};
+let emps=[],seq=0,activeCtx=null,chatHistory=[],logs=[],alerts=[],alertsFired=false;
+const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+function fmtTime(){return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function addLog(msg,type='info'){logs.unshift({time:fmtTime(),msg,type});if(logs.length>30)logs.pop();renderLog();}
+function renderLog(){const el=document.getElementById('activity-log');if(!logs.length){el.innerHTML='<div class="empty-state">No activity yet.</div>';return;}el.innerHTML=logs.slice(0,15).map(l=>`<div class="log-item"><span class="log-time">${l.time}</span><span class="log-msg">${l.msg}</span><span class="log-type ${l.type}">${l.type}</span></div>`).join('');}
+function renderAlerts(){const el=document.getElementById('alerts-panel');document.getElementById('alert-count').textContent=alerts.length;if(!alerts.length){el.innerHTML='<div class="empty-state">No alerts yet. Alerts trigger after 2 min.</div>';return;}el.innerHTML=alerts.map(a=>`<div class="alert-item ${a.type==='warn'?'warn':''}"><div class="alert-top">${a.icon} ${a.title}</div><div class="alert-body">${a.body}</div></div>`).join('');}
+function triggerAlerts(){if(alertsFired)return;alertsFired=true;alerts=[];const p=emps.filter(e=>e.status!=='Completed');if(p.length){alerts.push({type:'danger',icon:'🚨',title:'Task Escalation',body:`${p[0].name}: onboarding has pending tasks over 2 min. Manager notified.`});alerts.push({type:'warn',icon:'⚠️',title:'Missing Documents',body:`HR Agent: Benefits enrollment not yet submitted for ${p[0].name}.`});}if(emps.length>0){alerts.push({type:'danger',icon:'⏱',title:'Delayed Task Detected',body:`IT Agent: System access setup delayed for ${emps[0].name}. Sending reminder.`});alerts.push({type:'warn',icon:'📋',title:'Document Reminder Sent',body:`HR Agent sent follow-up to ${emps[0].name} re: NDA signature.`});}renderAlerts();addLog('Monitor Agent: Delay detected — escalation triggered','alert');addLog('HR Agent: Reminder sent for missing documents','warn');addLog('Manager Agent: Escalation email sent to team lead','alert');document.getElementById('mon-activity').textContent='Alert: Delays detected — escalations sent';}
+function spill(s){const c=s==='Pending'?'sp-pend':s==='In Progress'?'sp-prog':'sp-done';return '<span class="spill '+c+'">'+s+'</span>';}
+function render(){const t=emps.length,p=emps.filter(e=>e.status==='Pending').length,pr=emps.filter(e=>e.status==='In Progress').length,d=emps.filter(e=>e.status==='Completed').length;document.getElementById('st-total').textContent=t;document.getElementById('st-pend').textContent=p;document.getElementById('st-prog').textContent=pr;document.getElementById('st-done').textContent=d;document.getElementById('emp-count').textContent=t+' employee'+(t!==1?'s':'');const el=document.getElementById('emp-list');if(!t){el.innerHTML='<div class="empty-state">No employees yet.</div>';return;}el.innerHTML=emps.map((e,i)=>{const ci=i%5,dc=e.tasks.filter(t=>t.done).length,pct=Math.round(dc/e.tasks.length*100),bc=e.status==='Completed'?'#34d399':e.status==='In Progress'?'#4f8ef7':'#fbbf24';return '<div class="emp-card"><div class="emp-top"><div class="avatar" style="background:'+AVBG[ci]+';color:'+AVCOL[ci]+';">'+ini(e.name)+'</div><div><div class="emp-name">'+e.name+'</div><div class="emp-meta">'+e.role+' · '+e.dept+'</div></div><div class="emp-right">'+spill(e.status)+'<span style="font-size:11px;color:var(--muted);">'+dc+'/'+e.tasks.length+'</span></div></div><div class="prog-label"><span>Progress</span><span>'+pct+'%</span></div><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+bc+';"></div></div><div style="margin-top:6px;">'+e.tasks.map((t,ti)=>'<div class="task-row"><div class="tdot" style="background:'+(t.done?'#34d399':t.active?'#4f8ef7':'rgba(255,255,255,0.15)')+'"></div><div class="tname" style="color:'+(t.done?'var(--muted)':'var(--text)')+'">'+t.name+'</div><span class="tagent" style="color:'+(AGCOL[t.agent]||'var(--muted)')+'">'+t.agent+'</span><button class="help-btn" data-eid="'+e.id+'" data-ti="'+ti+'">AI Help</button></div>').join('')+'</div></div>';}).join('');document.querySelectorAll('.help-btn').forEach(btn=>{btn.addEventListener('click',function(){openHelp(parseInt(this.dataset.eid),parseInt(this.dataset.ti));});});}
+function addEmp(){const name=document.getElementById('inp-name').value.trim(),role=document.getElementById('inp-role').value,dept=document.getElementById('inp-dept').value.trim()||role+' Dept';if(!name){document.getElementById('inp-name').style.borderColor='var(--red)';return;}document.getElementById('inp-name').style.borderColor='';const tasks=(TASKS[role]||TASKS.Developer).map(t=>({...t,done:false,active:false}));tasks[0].active=true;emps.push({id:++seq,name,role,dept,tasks,status:'In Progress'});document.getElementById('inp-name').value='';document.getElementById('inp-dept').value='';addLog(`${name} added as ${role} in ${dept}`,'info');addLog(`HR Agent: Generated onboarding tasks for ${name}`,'info');render();autoProgress(emps[emps.length-1]);}
+function autoProgress(emp){const agMap={HR:'hr-activity',IT:'it-activity',Manager:'mgr-activity'};let i=0;function next(){if(i>=emp.tasks.length)return;if(i>0)emp.tasks[i-1].active=false;emp.tasks[i].active=true;emp.status='In Progress';const ag=agMap[emp.tasks[i].agent];if(ag)document.getElementById(ag).textContent=`Processing: ${emp.tasks[i].name} for ${emp.name}`;addLog(`${emp.tasks[i].agent} Agent: Started "${emp.tasks[i].name}" for ${emp.name}`,'info');render();setTimeout(()=>{emp.tasks[i].done=true;emp.tasks[i].active=false;addLog(`${emp.tasks[i].agent} Agent: Completed "${emp.tasks[i].name}" for ${emp.name}`,'info');i++;emp.status=i>=emp.tasks.length?'Completed':'In Progress';if(i>=emp.tasks.length)addLog(`${emp.name} onboarding completed!`,'info');render();if(i<emp.tasks.length)setTimeout(next,7000+Math.random()*4000);},6000+Math.random()*4000);}setTimeout(next,1500);}
+function openHelp(eid,ti){const emp=emps.find(e=>e.id===eid);if(!emp)return;const task=emp.tasks[ti];activeCtx={emp,task};chatHistory=[];document.getElementById('right-sub').textContent=emp.name+' · '+task.name;const inp=document.getElementById('chat-inp');inp.disabled=false;inp.placeholder='Ask anything about "'+task.name+'"...';document.getElementById('send-btn').disabled=false;const msgs=document.getElementById('chat-msgs');msgs.innerHTML='';addBubble('ai','Hi '+emp.name.split(' ')[0]+'! I am your onboarding assistant. I will help you with <strong>'+task.name+'</strong>. Ask me anything!');const qs=QUICK_Q[task.agent]||QUICK_Q.HR;const qc=document.getElementById('quick-chips');qc.style.display='flex';qc.innerHTML='';qs.forEach(q=>{const btn=document.createElement('button');btn.className='qchip';btn.textContent=q;btn.addEventListener('click',()=>callAI(q));qc.appendChild(btn);});}
+function addBubble(who,html){const msgs=document.getElementById('chat-msgs');const d=document.createElement('div');d.className='msg '+who;d.innerHTML='<div class="msg-who">'+(who==='ai'?'AI Assistant':'You')+'</div><div class="bubble">'+html+'</div>';msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;}
+function showTyping(){const msgs=document.getElementById('chat-msgs');const d=document.createElement('div');d.className='msg ai';d.id='typing';d.innerHTML='<div class="msg-who" style="color:var(--purple);">AI Assistant</div><div class="typing-dots"><span></span><span></span><span></span></div>';msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;}
+function sendMsg(){const inp=document.getElementById('chat-inp');const q=inp.value.trim();if(!q)return;inp.value='';callAI(q);}
+async function callAI(userMsg){if(!activeCtx)return;const{emp,task}=activeCtx;addBubble('user',userMsg);chatHistory.push({role:'user',content:userMsg});document.getElementById('send-btn').disabled=true;document.getElementById('quick-chips').style.display='none';showTyping();const systemPrompt='You are a friendly onboarding assistant inside a company HR platform. The employee is '+emp.name+', a '+emp.role+' in the '+emp.dept+' department. They are asking about the onboarding task: "'+task.name+'" managed by the '+task.agent+' agent. Give helpful, concise, warm answers. Use bullet points when listing items. Keep responses under 100 words.';try{const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({systemPrompt,chatHistory})});const data=await res.json();if(data.error){throw new Error(data.error);}const reply=data.reply;chatHistory.push({role:'assistant',content:reply});document.getElementById('typing')?.remove();const html=reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');addBubble('ai',html);addLog(`AI answered query for ${emp.name}`,'info');}catch(err){document.getElementById('typing')?.remove();addBubble('ai','⚠️ Error: '+err.message);}document.getElementById('send-btn').disabled=false;}
+(function(){const s=[{name:'Sarah Chen',role:'Developer',dept:'Engineering'},{name:'Marcus Lee',role:'Designer',dept:'Product Design'}];s.forEach(p=>{const tasks=(TASKS[p.role]||TASKS.Developer).map(t=>({...t,done:false,active:false}));tasks[0].done=true;tasks[1].done=true;tasks[2].active=true;emps.push({id:++seq,name:p.name,role:p.role,dept:p.dept,tasks,status:'In Progress'});});emps[0].status='Pending';emps[0].tasks.forEach(t=>{t.done=false;t.active=false;});emps[0].tasks[0].active=true;addLog('System initialized with 2 sample employees','info');addLog('HR Agent: Documents requested for Sarah Chen','info');addLog('IT Agent: Access provisioning started for Marcus Lee','info');render();renderAlerts();setTimeout(()=>addLog('Monitor Agent: Scanning all employees for delays...','info'),8000);setTimeout(triggerAlerts,120000);})();
+</script>
+</body>
+</html>
