@@ -69,12 +69,7 @@ http://localhost:5000
 ---
 
 Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `GEMINI_API_KEY` | Your Google Gemini API key |
-| `PORT` | Port to run the server on (default: 5000) |
-
+VariableDescriptionGEMINI_API_KEYYour Google Gemini API keyPORTPort to run the server on (default: 5000)
 
  Notes
 
