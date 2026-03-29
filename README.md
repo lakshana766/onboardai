@@ -16,7 +16,7 @@ Features
 
 ---
 
-## 🛠️ Tech Stack
+Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -25,11 +25,11 @@ Features
 | AI | Google Gemini 2.5 Flash API |
 | Hosting | Railway |
 
----
 
-## 📁 Project Structure
 
-```
+ Project Structure
+
+
 onboardai/
 ├── app.py            ← Flask backend server
 ├── requirements.txt  ← Python dependencies
